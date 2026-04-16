@@ -1,3 +1,34 @@
+# Dependencies
 node_modules/
-.env
+.pnp
+.pnp.js
+
+# Testing
+coverage/
+
+# Production
+build/
+dist/
+
+# Misc
 .DS_Store
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE / Editor Files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Backend Uploads
+# Ignore new uploaded files but keep the directory and currently tracked files
+hostel-backend/uploads/*
+!hostel-backend/uploads/.gitkeep
