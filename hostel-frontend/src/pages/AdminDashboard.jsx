@@ -2183,7 +2183,7 @@ export default function AdminDashboard({ user }) {
 
                                 <div className="flex items-center gap-4 mb-6">
                                     {studentDetail.profile_picture ? (
-                                        <img src={`http://localhost:5000${studentDetail.profile_picture}`} alt="" className="w-16 h-16 rounded-full object-cover border-2 border-gray-200" />
+                                        <img src={`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}${studentDetail.profile_picture}`} alt="" className="w-16 h-16 rounded-full object-cover border-2 border-gray-200" />
                                     ) : (
                                         <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-2xl font-bold">
                                             {(studentDetail.name || "S").charAt(0)}
@@ -2345,7 +2345,7 @@ export default function AdminDashboard({ user }) {
                                                 {catImages.map(img => (
                                                     <div key={img.id} className="group relative rounded-lg overflow-hidden border border-gray-200 aspect-square">
                                                         <img 
-                                                            src={`http://localhost:5000${img.image_path}`} 
+                                                            src={`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}${img.image_path}`} 
                                                             alt={img.caption || ""} 
                                                             className="w-full h-full object-cover"
                                                         />
