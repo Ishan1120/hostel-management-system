@@ -403,7 +403,12 @@ export default function StudentDashboard({ user }) {
           {/* Logout */}
           <div className="p-4 border-t border-slate-200">
             <button
-              onClick={() => navigate("/")}
+              onClick={() => {
+                if (window.confirm("Are you sure you want to logout?")) {
+                  localStorage.removeItem("hostel_user");
+                  window.location.href = "/";
+                }
+              }}
               className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-slate-100 text-text-main font-medium hover:bg-slate-200 transition-colors"
             >
               <span className="material-symbols-outlined text-lg">logout</span>

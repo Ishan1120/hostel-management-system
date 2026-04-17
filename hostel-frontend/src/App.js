@@ -10,15 +10,27 @@ import AdminDashboard from "./pages/AdminDashboard";
 import NotHosteller from "./pages/NotHosteller";
 
 function App() {
-  const [user, setUser] = useState(null);
+  const [user, setUserState] = useState(() => {
+    const savedUser = localStorage.getItem("hostel_user");
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
+
+  const setUser = (newUser) => {
+    if (newUser) {
+      localStorage.setItem("hostel_user", JSON.stringify(newUser));
+    } else {
+      localStorage.removeItem("hostel_user");
+    }
+    setUserState(newUser);
+  };
 
   return (
     <Routes>
       {/* ================= HOME (LANDING) ================= */}
-      <Route path="/" element={<Home />} />
+      <Route path="/" element={user ? <Navigate to={`/${user.role.toLowerCase()}`} replace /> : <Home />} />
 
       {/* ================= LOGIN ================= */}
-      <Route path="/login" element={<Login setUser={setUser} />} />
+      <Route path="/login" element={user ? <Navigate to={`/${user.role.toLowerCase()}`} replace /> : <Login setUser={setUser} />} />
 
       {/* ================= GALLERY ================= */}
       <Route path="/gallery" element={<Gallery />} />
