@@ -22,17 +22,20 @@ export default function Home() {
                                 <img src="mits-logo.png" alt="" />
                             </div>
                             <div className="flex flex-col">
-                                <h1 className="text-xl font-bold tracking-tight text-slate-900 leading-none">
+                                <h1 className="hidden lg:block text-xl font-bold tracking-tight text-slate-900 leading-none">
                                     {s.college_name || "Madhav Institute of Technology and Science, Gwalior [M.P]"}
                                 </h1>
-                                <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                                <h1 className="block lg:hidden text-xl font-bold tracking-tight text-slate-900 leading-none">
+                                    MITS Gwalior
+                                </h1>
+                                <span className="hidden sm:block text-xs font-medium text-slate-500 uppercase tracking-wider mt-1">
                                     {s.college_subtitle || "Deemed University"}
                                 </span>
                             </div>
                         </div>
 
                         {/* Nav */}
-                        <nav className="hidden md:flex items-center gap-8">
+                        <nav className="hidden md:flex items-center gap-4 lg:gap-8">
                             <a className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors" href="#hero">Home</a>
                             <a className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors" href="#roles">Roles</a>
                             <a className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors" href="#about">About</a>
