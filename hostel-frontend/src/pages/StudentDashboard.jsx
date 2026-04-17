@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../services/api";
+import api, { API_BASE_URL } from "../services/api";
 import axios from "axios";
 
 export default function StudentDashboard({ user }) {
@@ -161,7 +161,7 @@ export default function StudentDashboard({ user }) {
     try {
       const formData = new FormData();
       formData.append("profile_pic", pendingPicFile);
-      await axios.post(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/student/profile-picture/${user.user_id}`, formData, {
+      await axios.post(`${API_BASE_URL}/student/profile-picture/${user.user_id}`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       const profileRes = await api.get(`/student/${user.user_id}`);
@@ -184,7 +184,7 @@ export default function StudentDashboard({ user }) {
   };
 
   const profilePicUrl = profile?.profile_picture
-    ? `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}${profile.profile_picture}`
+    ? `${API_BASE_URL}${profile.profile_picture}`
     : null;
   const canChangePic = profile && profile.profile_picture_changed !== 1;
 
@@ -903,7 +903,7 @@ export default function StudentDashboard({ user }) {
                           <div key={i} className="flex items-center gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100 hover:shadow-md transition-all">
                             {rm.profile_picture ? (
                               <img
-                                src={`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}${rm.profile_picture}`}
+                                src={`${API_BASE_URL}${rm.profile_picture}`}
                                 alt={rm.name}
                                 className="w-14 h-14 rounded-full object-cover border-2 border-primary/20"
                               />
