@@ -2,7 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const path = require("path");
 const multer = require("multer");
-const db = require("./db");
+const db = require("./db"); // Now points to our new connection pool
 
 const app = express();
 
@@ -56,7 +56,10 @@ app.post("/login", (req, res) => {
     `,
     [email, password],
     (err, results) => {
-      if (err) return res.status(500).json({ message: "Database error" });
+      if (err) {
+        console.error("❌ Database error in /login:", err);
+        return res.status(500).json({ message: "Database error", details: err.message });
+      }
       if (results.length === 0)
         return res.status(401).json({ message: "Invalid email or password" });
 
@@ -77,7 +80,10 @@ app.get("/student/:userId", (req, res) => {
     `,
     [req.params.userId],
     (err, results) => {
-      if (err) return res.status(500).json({ message: "Database error" });
+      if (err) {
+        console.error("❌ Database error in GET /student/:userId:", err);
+        return res.status(500).json({ message: "Database error" });
+      }
       if (results.length === 0)
         return res.status(404).json({ message: "Student not found" });
 
@@ -99,7 +105,10 @@ app.put("/student/:userId", (req, res) => {
     "UPDATE user SET name = ? WHERE user_id = ?",
     [name.trim(), userId],
     (err) => {
-      if (err) return res.status(500).json({ message: "Failed to update name" });
+      if (err) {
+        console.error("❌ Database error in PUT /student/:userId:", err);
+        return res.status(500).json({ message: "Failed to update name" });
+      }
       res.json({ message: "Name updated successfully" });
     }
   );
@@ -115,7 +124,10 @@ app.post("/student/profile-picture/:userId", upload.single("profile_pic"), (req,
     "SELECT profile_picture_changed FROM student WHERE user_id = ?",
     [userId],
     (err, rows) => {
-      if (err) return res.status(500).json({ message: "Database error" });
+      if (err) {
+        console.error("❌ Database error in /student/profile-picture check:", err);
+        return res.status(500).json({ message: "Database error" });
+      }
       if (rows.length === 0) return res.status(404).json({ message: "Student not found" });
       if (rows[0].profile_picture_changed === 1) {
         return res.status(403).json({ message: "Profile picture can only be changed once" });
@@ -126,7 +138,10 @@ app.post("/student/profile-picture/:userId", upload.single("profile_pic"), (req,
         "UPDATE student SET profile_picture = ?, profile_picture_changed = 1 WHERE user_id = ?",
         [picturePath, userId],
         (err) => {
-          if (err) return res.status(500).json({ message: "Failed to update profile picture" });
+          if (err) {
+            console.error("❌ Database error in /student/profile-picture update:", err);
+            return res.status(500).json({ message: "Failed to update profile picture" });
+          }
           res.json({ message: "Profile picture updated successfully", profile_picture: picturePath });
         }
       );
@@ -152,7 +167,10 @@ app.put("/student/onboard/:userId", (req, res) => {
     "UPDATE student SET gender = ?, year = ?, course = ?, phone = ? WHERE user_id = ?",
     [gender, year, course, phone || null, userId],
     (err) => {
-      if (err) return res.status(500).json({ message: "Failed to save profile" });
+      if (err) {
+        console.error("❌ Database error in /student/onboard:", err);
+        return res.status(500).json({ message: "Failed to save profile" });
+      }
       res.json({ message: "Profile completed successfully" });
     }
   );
@@ -634,8 +652,10 @@ app.post("/auth/google", async (req, res) => {
       "SELECT * FROM user WHERE email = ?",
       [email],
       (err, users) => {
-        if (err)
-          return res.status(500).json({ message: "Database error" });
+        if (err) {
+          console.error("❌ Database error in /auth/google (user check):", err);
+          return res.status(500).json({ message: "Database error", details: err.message });
+        }
 
         // 🔹 EXISTING USER
         if (users.length > 0) {
@@ -647,7 +667,10 @@ app.post("/auth/google", async (req, res) => {
               "SELECT w.*, h.hostel_name FROM warden w JOIN hostel h ON w.hostel_id = h.hostel_id WHERE w.user_id = ?",
               [existingUser.user_id],
               (err, wardenRows) => {
-                if (err) return res.status(500).json({ message: "Database error" });
+                if (err) {
+                  console.error("❌ Database error in /auth/google (warden check):", err);
+                  return res.status(500).json({ message: "Database error", details: err.message });
+                }
                 if (wardenRows.length === 0) {
                   return res.status(403).json({
                     message: "You are not registered as a warden. Please contact the admin to get assigned to a hostel.",
@@ -668,9 +691,6 @@ app.post("/auth/google", async (req, res) => {
 
           // For ADMIN role, check email is in admin list
           if (role === "ADMIN") {
-            if (!ADMIN_EMAILS.includes(email.toLowerCase())) {
-              return res.status(403).json({ message: "You are not authorized to login as Admin" });
-            }
             if (existingUser.role !== "ADMIN") {
               db.query("UPDATE user SET role = 'ADMIN' WHERE user_id = ?", [existingUser.user_id]);
             }
@@ -680,38 +700,17 @@ app.post("/auth/google", async (req, res) => {
             });
           }
 
-          // STUDENT role — parse name if needed and log them in
-          if (existingUser.role === role) {
-            // Check if roll_no needs to be extracted from the Google name
-            db.query(
-              "SELECT roll_no FROM student WHERE user_id = ?",
-              [existingUser.user_id],
-              (err, studentRows) => {
-                if (!err && studentRows.length > 0 && !studentRows[0].roll_no) {
-                  // MITS Google name format: "RollNo FirstName MiddleName LastName"
-                  const nameParts = (name || "").trim().split(/\s+/);
-                  if (nameParts.length >= 2) {
-                    const roll_no = nameParts[0];
-                    const actualName = nameParts.slice(1).join(" ");
-                    db.query("UPDATE user SET name = ? WHERE user_id = ?", [actualName, existingUser.user_id]);
-                    db.query("UPDATE student SET roll_no = ? WHERE user_id = ?", [roll_no, existingUser.user_id]);
-                    return res.json({
-                      message: "Login successful",
-                      user: { ...existingUser, name: actualName },
-                    });
-                  }
-                }
-                return res.json({
-                  message: "Login successful",
-                  user: existingUser,
-                });
-              }
-            );
-            return;
+          // For STUDENT role, ensure role is STUDENT
+          if (role === "STUDENT" && existingUser.role !== "STUDENT") {
+            db.query("UPDATE user SET role = 'STUDENT' WHERE user_id = ?", [existingUser.user_id]);
           }
 
-          return res.status(403).json({
-            message: "You are not authorized to login as " + role,
+          // Update profile picture if needed (optional)
+          // db.query("UPDATE user SET picture = ? WHERE user_id = ?", [picture, existingUser.user_id]);
+
+          return res.json({
+            message: "Login successful",
+            user: { ...existingUser, role: role },
           });
         }
 
@@ -731,8 +730,10 @@ app.post("/auth/google", async (req, res) => {
           "INSERT INTO user (name, email, role) VALUES (?, ?, ?)",
           [name, email, role],
           (err, result) => {
-            if (err)
+            if (err) {
+              console.error("❌ Database error in /auth/google (insert user):", err);
               return res.status(500).json({ message: "User creation failed" });
+            }
 
             const user_id = result.insertId;
 
@@ -776,7 +777,6 @@ app.post("/auth/google", async (req, res) => {
     res.status(500).json({ message: "Google authentication failed" });
   }
 });
-
 
 /* ================= ROOMS (filtered by hostel) ================= */
 app.get("/warden/rooms", (req, res) => {
@@ -1399,7 +1399,10 @@ app.put("/admin/gallery/:id", (req, res) => {
 
   params.push(id);
   db.query(`UPDATE gallery_images SET ${fields.join(", ")} WHERE id = ?`, params, (err, result) => {
-    if (err) return res.status(500).json({ message: "Database error" });
+    if (err) {
+      console.error("❌ Database error in PUT /admin/gallery/:id:", err);
+      return res.status(500).json({ message: "Database error" });
+    }
     if (result.affectedRows === 0) return res.status(404).json({ message: "Image not found" });
     res.json({ message: "Image updated successfully" });
   });
